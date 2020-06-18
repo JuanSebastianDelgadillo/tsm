@@ -1,11 +1,13 @@
 <?php
 	date_default_timezone_set('UTC');
+	$fechayhora = date('Y-m-d H:i');
 	$hora = date('H:i');
-	echo $horaActual = date('H:i',strtotime('-1 minute', strtotime( $hora)));
+	$horaActual = date('H:i',strtotime('-1 minute', strtotime( $hora)));
 	$tsmActual = date('Y-m-d');
 	$tsmWeek = date( 'Y-m-d', strtotime( '-1 weeks' ) );
 	$tsmMonth = date( 'Y-m-d', strtotime( '-1 months' ) );
 	$tsmYear = date( 'Y-m-d', strtotime( '-1 years' ) );
+	$tsmAyer = date( 'Y-m-d', strtotime( '- 1 days' ) );
 	$token = getTokenApp();
 
 	function getTokenApp() {

@@ -16,21 +16,38 @@
 			<div class="modal-dialog modal-lg" role="document">
 				<div class="modal-content">
 					<div class="modal-header">
-						<div class="modal-title" id="exampleModalLabel">
-							<h5>TSM de la estación <label id="ciudad"></label></h5>
+						<div class="modal-title" id="exampleModalLabel" style="width: 100%;">
+							<h5>TSM de la estación <label id="ciudad"></label> <label id="fec_actual"></label></h5>
 							<h7 class="text-secondary" id="georefer"></h7>
-							<div class="row">
-								<div class="col">
-									Tº Actual : <label id="tem_actual"></label>
+							<br>
+							<div class="w-100 mt-2" style="display: flex;">
+								<div class="col border rounded m-1">
+									<p class="text-info">Tº Actual: </p>
+									<p class="text-center" id="tem_actual">13.7 º C</p>
+									 <small id="small_tem_actual" class="form-text text-muted">
+									 	17-06-2020 22:30 UTC
+									 </small>
 								</div>
-								<div class="col">
-									Promedio del día : <label id="tem_promedio"></label>
+								<div class="col border rounded m-1">
+									<p class="text-info">Prom. hoy: 
+									<p class="text-center" id="tem_promedio">16.6 ºC</p>
+									 <small id="small_tem_promedio" class="form-text text-muted">
+									 	17-06-2020 22:30 UTC
+									</small>
 								</div>
-								<div class="col">
-									Tº de Ayer : <label id="tem_ayer"></label>
+								<div class="col border rounded m-1">
+									<p class="text-info">Tº de Ayer: 
+									<p class="text-center" id="tem_ayer">16.6 ºC</p>
+									 <small id="small_tem_ayer" class="form-text text-muted">
+									 	16-06-2020 22:30 UTC
+									</small>
 								</div>
-								<div class="col">
-									Tº hace un año atrás : <label id="tem_ano"></label>
+								<div class="col border rounded m-1">
+									<p class="text-info">Tº año atrás: 
+									<p class="text-center" id="tem_ano">16.6 ºC</p>
+									 <small id="small_tem_ano" class="form-text text-muted">
+									 	17-06-2019 22:30 UTC
+									</small>
 								</div>
 							</div>
 						</div>

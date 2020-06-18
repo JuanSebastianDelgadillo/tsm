@@ -11,10 +11,10 @@
 	var tsmWeek = '<?php echo $tsmWeek; ?>';
 	var tsmMonth = '<?php echo $tsmMonth; ?>';
 	var tsmYear = '<?php echo $tsmYear; ?>';
+	var fechayhora = '<?php echo $fechayhora; ?>';
+	var tsmAyer = '<?php echo $tsmAyer; ?>';
 
 	
-
-
 
 </script>
 <meta charset="UTF-8">

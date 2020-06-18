@@ -53,9 +53,22 @@ $(document).ready(function(){
 				// CARGO GRAFICO INICIAL (ACTUAL)
 				var tip = verifica_tipo(cod);
 
-				// console.log(tip);
-				cargarGrafico(tip, cod, 'TSM Actual', tsmActual, 'tsm_Actual', '#00FFFF');
-				
+
+				const start_inicial = async function(){
+					try {
+
+					const result = await busca_datos_iniciales(fechayhora, tip, cod, 'TSM Actual', tsmActual);
+					if (result == 'OK') {
+						const sum = await cargarGrafico(tip, cod, 'TSM Actual', tsmActual, 'tsm_Actual', '#00FFFF');;
+
+					}
+					}catch(err) {
+
+					 	 errer(lugar);
+					}
+				}
+
+				start_inicial();
 	
 			});
 		}
@@ -144,10 +157,107 @@ $(document).ready(function(){
 
     	return tip;
 
+    }
+
+    async function busca_datos_iniciales(fechayhora, tipo, codigo, titulo, fecha)
+    {
+    	console.log('Buscando datos iniciales....');
+    	$('#fec_actual').html(fechayhora);
+    	var ultimo_dato;
+		var fecha_ultimo_dato;
+
+    	var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+horaActual+':00&period=24&fmt=json&tipo=shoa&orden=DESC&token='+token;
+    	$.ajax({
+		 url: url,
+			type: 'get',
+			dataType: 'jsonp',
+			beforeSend: function(){
+				
+					$('#tem_actual').html('<img width="40" class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/>');
+					$('#tem_promedio').html('<img width="40" class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/>');
+					$('#tem_ayer').html('<img  width="40"class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/>');
+					$('#tem_ano').html('<img width="40" class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/>');
+			},
+			success: function(datos){
+
+					var datosurl = [];
+					var contad = 0;
+					var sum = 0.0;
+					var promed;
+					var ultimo_dato;
+					var ultimo_fecha;
+					var datw;
+					var fecha_ayer;
+					var fecha_int_ayer;
+
+					var fecha_ayer = new Date(tsmAyer);
+					console.log(fecha_ayer);
+
+					try {
+
+						$.each(datos, function(index, elem){	
+							if ($.isNumeric(elem.valor)){
+								datosurl.push(elem);
+							}
+						});
+
+					$.each(datos, function(ind, ele){
+
+						if ($.isNumeric(ele.valor))
+						{
+							datw = ele.valor;
+							sum = parseFloat(sum)+ parseFloat(datw);
+							contad++;
+						}
+
+					});
+
+					if ($.isNumeric(datw)) {
+						$('#tem_actual').html('<h3>'+datw+' ºC</h3>');
+					}else{
+						$('#tem_actual').html('<h5 class="bg-info text-white">No hay info</h5>');
+					}
+
+					promed = sum / contad;
+					promed = parseInt(promed * 10, 10) / 10;
+
+					if ($.isNumeric(promed)) {
+						$('#tem_promedio').html('<h3>'+promed+' ºC</h3>');
+					}else{
+						$('#tem_promedio').html('<h5 class="bg-info text-white">No hay info</h5>');
+					}
+
+					
+					}catch(err) {
+						
+						$('#tem_actual').html('<div class="alert alert-warning" role="alert"><h7>No hay datos !</h7></div>');
+					 	$('#tem_promedio').html('<div class="alert alert-warning" role="alert"><h7>No hay datos !</h7></div>');
+					}
+
+					$('#small_tem_actual').html(fechayhora+' UTC');
+					$('#small_tem_promedio').html(fechayhora+' UTC');
+
+						
+					// console.log('promedio : '+promed);
+					
+					// $('#tem_actual').html(ultimo_dato);
+					// $('#small_tem_actual').html(fecha_ultimo_dato);
+					// $('#tem_ayer').html('<h3>16.3 ºC</h3>');
+					// $('#tem_ano').html('<h3>16.3 ºC</h3>');
+
+
+
+			}
+		});
+		console.log('inicial okey....');
+
+		return 'OK';
     }    
 
 	function cargarGrafico(tipo, codigo, titulo, fecha, lugar, color)
 	{
+		console.log('cargando grafico .....');
+		var datosIniciales = 0;
 		console.log(tipo);
 		inabilitar_checkes();
 		datosprs = [];
@@ -157,15 +267,13 @@ $(document).ready(function(){
 		var promedio = 0.0;
 		var suma = 0.0;
 
-		console.log(horaActual);
+		// console.log(horaActual);
 
-		console.log(token);
-		console.log(codigo);
-		console.log(fecha);
+		// console.log(token);
+		// console.log(codigo);
+		// console.log(fecha);
 
-		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+horaActual+':00&period=72&fmt=json&tipo=shoa&orden=ASC&token='+token;
-
-		console.log(url);
+		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+horaActual+':00&period=72&fmt=json&tipo=shoa&orden=DESC&token='+token;
 
 		$.ajax({
 			// url: 'http://provimar.mitelemetria.cl/apps/src/ws/wsgw.php?wsname=getData&idsensor=prs;rad&idestacion='+codigo+'&period=48&fmt=json&tipo=tecmar&orden=ASC&callback=?',
@@ -179,12 +287,12 @@ $(document).ready(function(){
 			success: function(data){
 				// INICIO DEL success
 
-				console.log(data);
+				// console.log(data);
 				const start = async function(){
 					try {
-					 
-					const result = await recuperar_promedios();
-					if (result == 'OK') {
+
+					// const result = await recuperar_promedios();
+					// if (result == 'OK') {
 						const sum = await ordena_datos();
 
 						if (sum == 'OK') {
@@ -195,69 +303,97 @@ $(document).ready(function(){
 								habilitar_checkes();
 							}
 						}
-					}
+					// }
 					}catch(err) {
 					 	habilitar_checkes();
 					 	 errer(lugar);
 					}
 				}	 
 
-				function recuperar_promedios()
-				{
-
-					for (var e in data){
-			
-						var datotw;
-
-						if (data[e].valor == 0 || data[e].valor == null ){
-							datotw = null;
-						}else{
-							datotw = data[e].valor;
-						}		
+				// function recuperar_promedios()
+				// {
+					
+					// for (var e in data){
+					// 	var datotw;
+					// 	if ($.isNumeric(data[e].valor)){
+					// 		datotw = data[e].valor;
+					// 	}else{
+					// 		datotw = null;
+					// 	}		
 							
-						if (data[e].idcanal.localeCompare(tipo) == 0) 
-						{
+					// 	if (data[e].idcanal.localeCompare(tipo) == 0) 
+					// 	{
 
-							if (datotw != 0 || datotw != null) 
-							{
+					// 		if ($.isNumeric(datotw)) 
+					// 		{
 														
-								if (contador == 0 ) { mintw = datotw; maxtw = datotw; }
-								if (datotw < mintw) { mintw = datotw; }
-								if (datotw > maxtw) { maxtw = datotw; }
-								contador = contador+1;
-								suma = parseFloat(suma) + parseFloat(datotw);
-
-							}
-						}
+					// 			if (contador == 0 ) { mintw = datotw; maxtw = datotw; }
+					// 			if (datotw < mintw) { mintw = datotw; }
+					// 			if (datotw > maxtw) { maxtw = datotw; }
+					// 			// contador = contador+1;
+					// 			// suma = parseFloat(suma) + parseFloat(datotw);
+					// 		}
+					// 	}
 								
-					}
-					 
-					promedio = suma / contador;
+					// }
+
+					// promedio = suma / contador;
+					// console.log('promedio : '+promedio);
 					// console.log(mintw);
 					// console.log(maxtw);
 					// console.log(promedio);
-					return 'OK'
-				}
+				// 	return 'OK'
+				// }
 			
 			
+				// async function ordena_datos()
+				// {
+				// 	console.log('Ordenando datos....');
+				// 	for (var i in data){
+				// 		if (data[i].valor == 0 || data[i].valor == null ){
+				// 			var dato = null;
+				// 		}else{
+				// 			var dato = data[i].valor;
+				// 		}
+
+				// 		if (i == 0 ) { mintw = dato; maxtw = dato; }
+				// 		if (dato < mintw) { mintw = dato; }
+				// 		if (dato > maxtw) { maxtw = dato; }
+
+				// 		if (data[i].idcanal.localeCompare(tipo) == 0){
+				// 			datosprs.push({
+				// 				x: new Date(data[i].fechahora).getTime(),
+				// 				y: dato
+				// 			});
+				// 		}
+
+				// 		ordernarArreglo(datosprs);
+				// 	}
+				// 	return 'OK'
+				// }
+
 				async function ordena_datos()
 				{
+					var conta = 0;
+					console.log('Ordenando datos....');
 					for (var i in data){
-						if (data[i].valor == 0 || data[i].valor == null ){
-							var dato = null;
-						}else{
+						if ($.isNumeric(data[i].valor)){
 							var dato = data[i].valor;
+						}else{
+							var dato = null;
 						}
 
-						// console.log(typeof(dato));
+						if (conta == 0 ) { mintw = dato; maxtw = dato; }
+						if (dato < mintw) { mintw = dato; }
+						if (dato > maxtw) { maxtw = dato; }
 
-						// console.log(dato);
 						if (data[i].idcanal.localeCompare(tipo) == 0){
 							datosprs.push({
 								x: new Date(data[i].fechahora).getTime(),
 								y: dato
 							});
 						}
+						conta++;
 						ordernarArreglo(datosprs);
 					}
 					return 'OK'
@@ -265,7 +401,8 @@ $(document).ready(function(){
 		
 		
 				async function mostrar_grafico()
-				{						
+				{	
+					console.log('Mostrando gráfico....');					
 					$('#'+lugar+' #loading').remove();
 					var options = opciones(mintw, maxtw, color);
 					$("#"+lugar).empty();
@@ -332,15 +469,12 @@ $(document).ready(function(){
 	}
 
 	function opciones(minTw, maxTw, color){
-		
-		console.log('datos minimos :'+ minTw);
-		console.log('datos minimos :'+ maxTw);
 
 		minTw = (Math.round(minTw)-1);
 		maxTw = (Math.round(maxTw)+1);
 
-		console.log('datos minimos :'+ minTw);
-		console.log('datos minimos :'+ maxTw);
+		console.log('datos mínimos :'+ minTw);
+		console.log('datos Máximos :'+ maxTw);
 		// console.log('datos  :'+ datosprs);
 
 		var options = {
