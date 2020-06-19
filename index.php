@@ -22,31 +22,31 @@
 							<br>
 							<div class="w-100 mt-2" style="display: flex;">
 								<div class="col border rounded m-1">
-									<p class="text-info">Tº Actual: </p>
-									<p class="text-center" id="tem_actual">13.7 º C</p>
-									 <small id="small_tem_actual" class="form-text text-muted">
-									 	17-06-2020 22:30 UTC
+									<p class="text-info">Tº actual: </p>
+									<p class="text-center" id="tem_actual"></p>
+									 <small id="small_tem_actual" style="font-size: 10px;" class="form-text text-muted">
+									 	
 									 </small>
 								</div>
 								<div class="col border rounded m-1">
-									<p class="text-info">Prom. hoy: 
-									<p class="text-center" id="tem_promedio">16.6 ºC</p>
-									 <small id="small_tem_promedio" class="form-text text-muted">
-									 	17-06-2020 22:30 UTC
+									<p class="text-info">Prom. actual: 
+									<p class="text-center" id="tem_promedio"></p>
+									 <small id="small_tem_promedio" style="font-size: 10px;" class="form-text text-muted">
+									 	
 									</small>
 								</div>
 								<div class="col border rounded m-1">
 									<p class="text-info">Tº de Ayer: 
-									<p class="text-center" id="tem_ayer">16.6 ºC</p>
-									 <small id="small_tem_ayer" class="form-text text-muted">
-									 	16-06-2020 22:30 UTC
+									<p class="text-center" id="tem_ayer"></p>
+									 <small id="small_tem_ayer" style="font-size: 10px;" class="form-text text-muted">
+									 	
 									</small>
 								</div>
 								<div class="col border rounded m-1">
 									<p class="text-info">Tº año atrás: 
-									<p class="text-center" id="tem_ano">16.6 ºC</p>
-									 <small id="small_tem_ano" class="form-text text-muted">
-									 	17-06-2019 22:30 UTC
+									<p class="text-center" id="tem_ano"></p>
+									 <small id="small_tem_ano" style="font-size: 10px;" class="form-text text-muted">
+									 	
 									</small>
 								</div>
 							</div>
