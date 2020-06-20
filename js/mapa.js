@@ -1,10 +1,8 @@
-var datosprs = [];
 var checkes = ['tsmActual', 'tsmWeek', 'tsmMonth', 'tsmYear'];
+var validaPromedioAnno = 0;
 
 $(document).ready(function(){
 	var cod;
-	var mintw;
-	var maxtw;
 	var mymap = L.map('map').setView([-33.4372,  -70.6506], 5);
 
 	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
@@ -39,8 +37,6 @@ $(document).ready(function(){
 				$('#tsm_Month').removeAttr('style');
 				$('#tsm_Year').empty();
 				$('#tsm_Year').removeAttr('style');
-							
-				$('#tsmActual').prop('checked', true);
 
 				$('#modal_grafico').modal({backdrop: 'static', keyboard: false});
 				cod = this.options.alt;
@@ -51,18 +47,68 @@ $(document).ready(function(){
 				$('#georefer').html("Latitud : "+grados.lat+" Longitud : "+grados.long);
 
 				// CARGO GRAFICO INICIAL (ACTUAL)
-				var tip = verifica_tipo(cod);
+				var tipo = verifica_tipo(cod);
 
 				$('#tem_actual').html('<img width="40" class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/>');
 				$('#tem_promedio').html('<img width="40" class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/>');
 				$('#tem_ayer').html('<img width="40" class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/>');
 				$('#tem_ano').html('<img width="40" class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/>');
 
-				cargarGrafico(tip, cod, 'TSM Actual', tsmActual, 'tsm_Actual', '#00FFFF');
-				
+				$('#small_tem_actual').html('');
+				$('#small_tem_promedio').html('');
+				$('#small_tem_ayer').html('');
+				$('#small_tem_ano').html('');
+				validaPromedioAnno = 0;
+
+				cargar_datos_iniciales(tipo, cod);
+
 			});
 		}
 	});
+
+
+	function cargar_datos_iniciales(tipo, codigo)
+	{
+
+			const start = async function(){
+
+					try {
+
+						const sum = await datos_iniciales(tipo, codigo, tsmActual, horaActual);
+
+					}catch(err) {
+					 	console.log('error'+err);
+						$('#tem_actual').html('<h4>No hay información</h4>');
+						$('#tem_promedio').html('<h4>No hay información</h4>');
+						$('#tem_ayer').html('<h4>No hay información</h4>');
+					 	 
+					}
+
+					try {
+
+						if (validaPromedioAnno == 0) {
+							const grop = await cargarGraficoAnnoAtras(tipo, codigo, tsmYear, horaActual);
+							validaPromedioAnno = 1;
+						}
+
+						
+					}catch(err) {
+						console.log('error'+err);
+						$('#tem_ano').html('<h4>No hay información</h4>');
+					 	
+					}
+						
+						habilitar_checkes();
+
+				}
+
+				start();
+
+	}
+
+
+
+
 
 	// START ESCUCHA CHECKED
 
@@ -71,7 +117,7 @@ $(document).ready(function(){
 		var tip = verifica_tipo(cod);
         
         if(this.checked) {
-            cargarGrafico(tip, cod, 'TSM Actual', tsmActual, lug, '#00FFFF');
+           cargarGrafico_tsmActual(tip, cod, tsmActual, horaActual);
         }else{
 			$('#'+lug).empty();
 			$("#"+lug).removeAttr('style');
@@ -83,7 +129,8 @@ $(document).ready(function(){
 		var tip = verifica_tipo(cod);
         
         if(this.checked) {
-            cargarGrafico(tip, cod, 'TSM Semana atrás', tsmWeek, lug, '#00FFFF');
+
+            cargarGrafico_tsmSemana(tip, cod, tsmWeek, horaActual);
         }else{
 			$('#'+lug).empty();
 			$("#"+lug).removeAttr('style');
@@ -91,11 +138,11 @@ $(document).ready(function(){
     });
 
      $('#tsmMonth').change(function() {
-		var lug = 'tsm_Month';
+     	var lug = 'tsm_Month';
 		var tip = verifica_tipo(cod);
         
         if(this.checked) {
-            cargarGrafico(tip, cod, 'TSM Mes atrás', tsmMonth, lug, '#00FFFF');
+            cargarGrafico_tsmMes(tip, cod, tsmMonth, horaActual);
         }else{
 			$('#'+lug).empty();
 			$("#"+lug).removeAttr('style');
@@ -107,7 +154,7 @@ $(document).ready(function(){
 		var tip = verifica_tipo(cod);
         
         if(this.checked) {
-            cargarGrafico(tip, cod, 'TSM Año atrás', tsmYear, lug, '#00FFFF');
+            cargarGrafico_tsmAno(tip, cod, tsmYear, horaActual);
         }else{
 			$('#'+lug).empty();
 			$("#"+lug).removeAttr('style');
@@ -140,6 +187,7 @@ $(document).ready(function(){
    
     function verifica_tipo(codigo)
     {
+    	console.log('Verificando tipo...');
     	var tip = 'gprs';
     	if (codigo == 'SANF' || codigo == 'CMET' || codigo == 'OHIG') {
     		tip = 'goes';
@@ -149,23 +197,12 @@ $(document).ready(function(){
 
     }
 
-	function cargarGrafico(tipo, codigo, titulo, fecha, lugar, color)
+	async function datos_iniciales(tipo, codigo, fecha, hora)
 	{
-		console.log('iniciando datos .....');
-		var datosIniciales = 0;
-		console.log(tipo);
+		console.log('iniciando proceso .....');
 		inabilitar_checkes();
-		datosprs = [];
-		mintw = 0.0;
-		maxtw = 0.0;
 
-		// console.log(horaActual);
-
-		// console.log(token);
-		// console.log(codigo);
-		// console.log(fecha);
-
-		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+horaActual+':00&period=72&fmt=json&tipo=shoa&orden=DESC&token='+token;
+		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+hora+':00&period=72&fmt=json&tipo=shoa&orden=DESC&token='+token;
 
 		$.ajax({
 			// url: 'http://provimar.mitelemetria.cl/apps/src/ws/wsgw.php?wsname=getData&idsensor=prs;rad&idestacion='+codigo+'&period=48&fmt=json&tipo=tecmar&orden=ASC&callback=?',
@@ -173,138 +210,82 @@ $(document).ready(function(){
 			type: 'get',
 			dataType: 'jsonp',
 			beforeSend: function(){
-				$("#"+lugar).removeAttr('style');
-				$('#'+lugar).html('<div class="text-center m-3" id="loading"><img class="text-center" src="http://www.shoa.cl/img/icons/loading_moneda_2.gif"/></div>');
+
 			},
 			success: function(data){
-				// INICIO DEL success
+				var contador = 0;
+				var suma = 0.0;
+				var promedio = 0.0;
+				var dato = 0.0;
+				var valor_final = 0.0;
+				var hora_final = null;
+				var fecha_ahora = new Date(tsmAyer+" "+horaActual+":00").getTime();
+				var elemdato = null;
 
-				// console.log(data);
-				const start = async function(){
-					try {
+				console.log('Inicando datos....datos inicales');
 
-						const sum = await ordena_datos();
-
-						if (1 == 1) {
-
-							const grap = await mostrar_grafico();
-
-							if (grap == 'OK') {
-			
-								habilitar_checkes();
-							}
-						}
-
-					}catch(err) {
-					 	habilitar_checkes();
-					 	 errer(lugar);
+			try{
+				$.each(data, function(index, elem){
+					
+					if (elem.valor == 'undefined' || elem.valor == null) {
+						
+						elemdato = null;
+					
+					}else{
+						elemdato = parseFloat(elem.valor);
 					}
-				}	 
 
-				async function ordena_datos()
-				{
-					var fechayhora;
-					var dato;
-					var valor_final; 
-					var conta = 0;
-					var suma = 0.0;
-					var promedio = 0.0;
-					var fecha_ahora = new Date(tsmAyer+" "+horaActual).getTime();
-		
-					console.log('Ordenando datos....');
-					for (var i in data){
-						if (data[i].valor != null || data[i].valor != 0 || $.isNumeric(data[i].valor)){
-							dato = data[i].valor;
-						}else{
-							dato = null;
-						}
+					if (elemdato != 'undefined' || elemdato != null || elemdato != 0 || $.isNumeric(elemdato)){
+						dato = elemdato;
 
-						if (conta == 0 ) { mintw = dato; maxtw = dato; }
-						if (dato < mintw) { mintw = dato; }
-						if (dato > maxtw) { maxtw = dato; }
-
-						if (data[i].idcanal.localeCompare(tipo) == 0){
-							datosprs.push({
-								x: new Date(data[i].fechahora).getTime(),
-								y: dato
-							});
-						}
-
-						if (lugar == 'tsm_Actual' && dato != null) {
-							conta++;
-							fechayhora = data[i].fechahora;
-							valor_final = data[i].valor;
-							suma = suma + parseFloat(valor_final);
-						}
-
-						if (lugar == 'tsm_Actual' && valor_final != '') {
-							$('#tem_actual').html('<h3>'+valor_final+' º C</h3>');
-							$('#small_tem_actual').html(fechayhora+' UTC');
-						}else{
-							$('#tem_actual').html('Sin información');
-						}
-
-						// SACO PROMEDIO
-						if ( suma != '') { promedio = suma/conta; }
-
-						if (lugar == 'tsm_Actual' && suma != '' && promedio != '' || promedio != 0.0) {
-
-							$('#tem_promedio').html('<h3>'+promedio.toFixed(1)+' º C</h3>');
-							$('#small_tem_promedio').html(data[i].fechahora+' UTC');
-						}else{
-							$('#tem_promedio').html('Sin información');
-						}
-						// SACO PROMEDIO
-
-
-						var fecha_json = new Date(i).getTime();
+						var fecha_json = new Date(index).getTime();
 
 						if (fecha_ahora == fecha_json) { 
-							console.log('Si son iguLES'+ data[i].valor +" "+data[i].fechahora ); 
-							$('#tem_ayer').html('<h3>'+data[i].valor+' º C</h3>');
-							$('#small_tem_ayer').html(data[i].fechahora+ 'UTC');
+							$('#tem_ayer').html('<h3>'+dato+' º C</h3>');
+							$('#small_tem_ayer').html(elem.fechahora+ 'UTC');
 
 						}
 
-						ordernarArreglo(datosprs);
+						valor_final = dato;
+						hora_final = elem.fechahora;
+						suma = suma + parseFloat(dato);
+						contador++;
 
+					}else{
+						dato = null;
 					}
-					// console.log(dato);
+
+				});
+
+				if (valor_final != '') {
+					$('#tem_actual').html('<h3>'+valor_final+' º C</h3>');
+					$('#small_tem_actual').html(fechayhora+' UTC');
+				}else{
+					$('#tem_actual').html('Sin información');
+					$('#small_tem_actual').html('');
+				}
+
+				// SACO PROMEDIO
+				if ( suma != '') { promedio = suma/contador; }
 					
-					return 'OK'
-				}
-		
-		
-				async function mostrar_grafico()
-				{	
-					console.log('Mostrando gráfico....');					
-					$('#'+lugar+' #loading').remove();
-					var options = opciones(mintw, maxtw, color);
-					$("#"+lugar).empty();
+				if (promedio != 0.0 && promedio != null) {
 
-				 	var chart = new ApexCharts($("#"+lugar)[0], options);
+					$('#tem_promedio').html('<h3>'+promedio.toFixed(1)+' º C</h3>');
+					$('#small_tem_promedio').html(hora_final+' UTC');
+				}else{
+					$('#tem_promedio').html('Sin información');
+				}	
+					
+				console.log('Finalizando datos....datos inicales');
+				return 'OK'
+			}catch(err) {
+				console.log('error'+err);
+				$('#tem_actual').html('Sin información');
+			 	$('#small_tem_actual').html('');
+			 	$('#tem_promedio').html('Sin información');
+			 	$('#small_tem_promedio').html('');
+			}
 
-				 	chart.render();
-				 	chart.updateOptions({
-					  title: {
-					  	text: titulo,
-					  	style: {
-					  		fontSize: '20px'
-					  	}
-					  }
-					});
-
-					console.log('Mostrando grafico');
-					return 'OK'
-				}
-
-				async function busca_promedio_anno_atras()
-				{	
-					console.log('busca promedio anno atras....');					
-					return 'OK'
-				}
-
-				start();
 
 				//FIN SUCCESS
 			},
@@ -314,10 +295,490 @@ $(document).ready(function(){
 	    });
 	}
 
-	function opciones(minTw, maxTw, color){
+	async function cargarGraficoAnnoAtras(tipo, codigo, fecha, hora)
+	{
+		console.log('iniciando proceso .....ano atras');
+		inabilitar_checkes();
 
-		minTw = (Math.round(minTw)-1);
-		maxTw = (Math.round(maxTw)+1);
+		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+hora+':00&period=72&fmt=json&tipo=shoa&orden=DESC&token='+token;
+
+		$.ajax({
+			// url: 'http://provimar.mitelemetria.cl/apps/src/ws/wsgw.php?wsname=getData&idsensor=prs;rad&idestacion='+codigo+'&period=48&fmt=json&tipo=tecmar&orden=ASC&callback=?',
+			url: url,
+			type: 'get',
+			dataType: 'jsonp',
+			beforeSend: function(){
+
+			},
+			success: function(data){
+				var contador = 0;
+				var suma = 0.0;
+				var promedio = 0.0;
+				var dato = 0.0;
+
+				console.log('Inicando datos....datos año atras');
+			try{
+				$.each(data, function(index, elem){
+					
+					if (elem.valor == 'undefined' || elem.valor == null) {
+						
+						elemdato = null;
+					
+					}else{
+						elemdato = parseFloat(elem.valor);
+					}
+
+					if (elemdato != null || elemdato!= 0 || $.isNumeric(elemdato)){
+						dato = elem.valor;
+						suma = suma + parseFloat(dato);
+						contador++;
+					}else{
+						dato = null;
+					}
+
+				});
+
+				// SACO PROMEDIO
+				if ( suma != '') { promedio = suma/contador; }
+					
+				if (promedio != 0.0 && promedio != null) {
+
+					$('#tem_ano').html('<h3>'+promedio.toFixed(1)+' º C</h3>');
+					$('#small_tem_ano').html(fecha+' '+hora+' UTC');
+				}else{
+					$('#tem_ano').html('Sin información');
+					$('#small_tem_ano').html('');
+				}	
+			}catch(err) {
+				console.log('error'+err);
+				$('#tem_ano').html('Sin información');
+			 	$('#small_tem_ano').html('');
+			}
+					
+				console.log('Finalizando datos....datos años atras');
+				return 'OK';
+
+				//FIN SUCCESS
+			},
+			error: function(XMLHttpRequest, textStatus, errorThrown){ 
+	                    console.log("Status: " + textStatus); alert("Error: " + errorThrown); 
+	        }
+	    });
+	}
+
+
+	// GRAFICO TSM_ACTUAL
+	async function cargarGrafico_tsmActual(tipo, codigo, fecha, hora)
+	{
+		console.log('iniciando proceso .....');
+		inabilitar_checkes();
+		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+hora+':00&period=72&fmt=json&tipo=shoa&orden=DESC&token='+token;
+		$.ajax({
+			url: url,
+			type: 'get',
+			dataType: 'jsonp',
+			beforeSend: function(){
+
+			},
+			success: function(data){
+				var dato = 0.0;
+				var elemdato = null;
+				var datosprsActual = [];
+				var mintwActual = 0.0;
+				var maxtwActual = 0.0;
+				var contador = 0;
+
+
+
+				console.log('Inicando datos....datos actual');
+
+			try{
+
+				$.each(data, function(index, elem){
+
+					if (elem.valor == 'undefined' || elem.valor == null) {
+						
+						elemdato = null;
+					
+					}else{
+						elemdato = parseFloat(elem.valor);
+					}
+
+					if (elemdato != 'undefined' || elemdato != null || elemdato != 0 || $.isNumeric(elemdato)){
+						contador++;
+
+						if (mintwActual == 0.0) {
+							mintwActual = elemdato;
+						}
+
+						if (maxtwActual == 0.0) {
+							maxtwActual = elemdato;
+						}
+
+						if (elemdato < mintwActual) { mintwActual = elemdato; }
+						if (elemdato > maxtwActual) { maxtwActual = elemdato; }
+
+
+						datosprsActual.push({
+							x: new Date(elem.fechahora).getTime(),
+							y: elemdato
+						});
+
+					}else{
+						dato = null;
+					}
+
+				});
+
+				ordernarArreglo(datosprsActual);
+
+				console.log('Mostrando gráfico.... actual');					
+					$('tsm_Actual #loading').remove();
+					var options = opcionesActual(mintwActual, maxtwActual, datosprsActual, '#00BFFF');
+					$('#tsm_Actual').empty();
+
+					// MOSTRANDO GRAFICO
+				 	var chart = new ApexCharts($("#tsm_Actual")[0], options);
+
+				 	chart.render();
+				 	chart.updateOptions({
+					  title: {
+					  	text: 'TSM Actual',
+					  	style: {
+					  		fontSize: '20px'
+					  	}
+					  }
+					});
+
+				}catch(err) {
+						console.log('error'+err);
+						errer('tsm_Actual');
+					 	
+					}			
+					
+				console.log('Finalizando datos....datos inicales');
+				return 'OK'
+
+			},
+			error: function(XMLHttpRequest, textStatus, errorThrown){ 
+	                    console.log("Status: " + textStatus); alert("Error: " + errorThrown); 
+	        }
+	    });
+
+	    habilitar_checkes();
+	}
+	// GRAFICO TSM_ACTUAL
+
+
+	// GRAFICO TSM_SEMANA
+	async function cargarGrafico_tsmSemana(tipo, codigo, fecha, hora)
+	{
+		console.log('iniciando proceso .....');
+		inabilitar_checkes();
+		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+hora+':00&period=72&fmt=json&tipo=shoa&orden=DESC&token='+token;
+		$.ajax({
+			url: url,
+			type: 'get',
+			dataType: 'jsonp',
+			beforeSend: function(){
+
+			},
+			success: function(data){
+				var dato = 0.0;
+				var elemdato = null;
+				var datosprsSemana = [];
+				var mintwSemana = 0.0;
+				var maxtwSemana = 0.0;
+				var contador = 0;
+
+
+
+				console.log('Inicando datos....datos semana');
+
+			try{
+
+				$.each(data, function(index, elem){
+
+					if (elem.valor == 'undefined' || elem.valor == null) {
+						
+						elemdato = null;
+					
+					}else{
+						elemdato = parseFloat(elem.valor);
+					}
+
+					if (elemdato != 'undefined' || elemdato != null || elemdato != 0 || $.isNumeric(elemdato)){
+						contador++;
+
+						if (mintwSemana == 0.0) {
+							mintwSemana = elemdato;
+						}
+
+						if (maxtwSemana == 0.0) {
+							maxtwSemana = elemdato;
+						}
+
+						if (elemdato < mintwSemana) { mintwSemana = elemdato; }
+						if (elemdato > maxtwSemana) { maxtwSemana = elemdato; }
+
+
+						datosprsSemana.push({
+							x: new Date(elem.fechahora).getTime(),
+							y: elemdato
+						});
+
+					}else{
+						dato = null;
+					}
+
+				});
+
+				ordernarArreglo(datosprsSemana);
+
+				console.log();
+
+				console.log('Mostrando gráfico.... actual');					
+					$('tsm_Week #loading').remove();
+					var options = opcionesActual(mintwSemana, maxtwSemana, datosprsSemana, '#0080FF');
+					$('#tsm_Week').empty();
+
+					// MOSTRANDO GRAFICO
+				 	var chart = new ApexCharts($("#tsm_Week")[0], options);
+
+				 	chart.render();
+				 	chart.updateOptions({
+					  title: {
+					  	text: 'TSM una semana atrás',
+					  	style: {
+					  		fontSize: '20px'
+					  	}
+					  }
+					});
+			}catch(err) {
+
+				console.log('error'+err);
+				errer('tsm_Week');
+			 	
+			}			
+					
+				console.log('Finalizando datos....datos inicales');
+				return 'OK'
+
+			},
+			error: function(XMLHttpRequest, textStatus, errorThrown){ 
+	                    console.log("Status: " + textStatus); alert("Error: " + errorThrown); 
+	        }
+	    });
+
+	    habilitar_checkes();
+	}
+	// GRAFICO TSM_SEMANA
+
+	// GRAFICO TSM_MES
+	async function cargarGrafico_tsmMes(tipo, codigo, fecha, hora)
+	{
+		console.log('iniciando proceso .....');
+		inabilitar_checkes();
+		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+hora+':00&period=72&fmt=json&tipo=shoa&orden=DESC&token='+token;
+		$.ajax({
+			url: url,
+			type: 'get',
+			dataType: 'jsonp',
+			beforeSend: function(){
+
+			},
+			success: function(data){
+				var dato = 0.0;
+				var elemdato = null;
+				var datosprsMes = [];
+				var mintwMes = 0.0;
+				var maxtwMes = 0.0;
+				var contador = 0;
+
+			try{
+
+				console.log('Inicando datos....datos actual');
+
+				$.each(data, function(index, elem){
+
+					if (elem.valor == 'undefined' || elem.valor == null) {
+						
+						elemdato = null;
+					
+					}else{
+						elemdato = parseFloat(elem.valor);
+					}
+
+					if (elemdato != 'undefined' || elemdato != null || elemdato != 0 || $.isNumeric(elemdato)){
+						contador++;
+
+						if (mintwMes == 0.0) {
+							mintwMes = elemdato;
+						}
+
+						if (maxtwMes == 0.0) {
+							maxtwMes = elemdato;
+						}
+
+						if (elemdato < mintwMes) { mintwMes = elemdato; }
+						if (elemdato > maxtwMes) { maxtwMes = elemdato; }
+
+
+						datosprsMes.push({
+							x: new Date(elem.fechahora).getTime(),
+							y: elemdato
+						});
+
+					}else{
+						dato = null;
+					}
+
+				});
+
+				ordernarArreglo(datosprsMes);
+
+				console.log('Mostrando gráfico.... Mes');					
+					$('tsm_Month #loading').remove();
+					var options = opcionesActual(mintwMes, maxtwMes, datosprsMes, '#8000FF');
+					$('#tsm_Month').empty();
+
+					// MOSTRANDO GRAFICO
+				 	var chart = new ApexCharts($("#tsm_Month")[0], options);
+
+				 	chart.render();
+				 	chart.updateOptions({
+					  title: {
+					  	text: 'TSM una mes atrás',
+					  	style: {
+					  		fontSize: '20px'
+					  	}
+					  }
+					});
+			}catch(err) {
+				console.log('error'+err);
+				errer('tsm_Month');
+			 	
+			}				
+					
+				console.log('Finalizando datos....datos inicales');
+				return 'OK'
+
+			},
+			error: function(XMLHttpRequest, textStatus, errorThrown){ 
+	                    console.log("Status: " + textStatus); alert("Error: " + errorThrown); 
+	        }
+	    });
+
+	    habilitar_checkes();
+	}
+	// GRAFICO TSM_MES
+
+	// GRAFICO TSM_ANNO
+	async function cargarGrafico_tsmAno(tipo, codigo, fecha, hora)
+	{
+		console.log('iniciando proceso .....');
+		inabilitar_checkes();
+		var url = 'http://wsprovimar.mitelemetria.cl/apps/src/ws/wsexterno.php?wsname=getData&idsensor=tw&idestacion='+codigo+'&date='+fecha+'T'+hora+':00&period=72&fmt=json&tipo=shoa&orden=DESC&token='+token;
+		$.ajax({
+			url: url,
+			type: 'get',
+			dataType: 'jsonp',
+			beforeSend: function(){
+
+			},
+			success: function(data){
+				var dato = 0.0;
+				var elemdato = null;
+				var datosprsAnno = [];
+				var mintwAnno = 0.0;
+				var maxtwAnno = 0.0;
+				var contador = 0;
+
+			try{
+				console.log('Inicando datos....datos anno');
+
+				$.each(data, function(index, elem){
+
+					if (elem.valor == 'undefined' || elem.valor == null) {
+						
+						elemdato = null;
+					
+					}else{
+						elemdato = parseFloat(elem.valor);
+					}
+
+					if (elemdato != 'undefined' || elemdato != null || elemdato != 0 || $.isNumeric(elemdato)){
+						contador++;
+
+						if (mintwAnno == 0.0) {
+							mintwAnno = elemdato;
+						}
+
+						if (maxtwAnno == 0.0) {
+							maxtwAnno = elemdato;
+						}
+
+						if (elemdato < mintwAnno) { mintwAnno = elemdato; }
+						if (elemdato > maxtwAnno) { maxtwAnno = elemdato; }
+
+
+						datosprsAnno.push({
+							x: new Date(elem.fechahora).getTime(),
+							y: elemdato
+						});
+
+					}else{
+						dato = null;
+					}
+
+				});
+
+				ordernarArreglo(datosprsAnno);
+
+				console.log('Mostrando gráfico.... anno');					
+					$('tsm_Year #loading').remove();
+					var options = opcionesActual(mintwAnno, maxtwAnno, datosprsAnno, '#BF00FF');
+					$('#tsm_Year').empty();
+
+					// MOSTRANDO GRAFICO
+				 	var chart = new ApexCharts($("#tsm_Year")[0], options);
+
+				 	chart.render();
+				 	chart.updateOptions({
+					  title: {
+					  	text: 'TSM un año atrás',
+					  	style: {
+					  		fontSize: '20px'
+					  	}
+					  }
+					});
+			}catch(err) {
+				console.log('error'+err);
+				errer('tsm_Year');
+			 	
+			}				
+					
+				console.log('Finalizando datos....datos inicales');
+				return 'OK'
+
+			},
+			error: function(XMLHttpRequest, textStatus, errorThrown){ 
+	                    console.log("Status: " + textStatus); alert("Error: " + errorThrown); 
+	        }
+	    });
+
+	    habilitar_checkes();
+	}
+	// GRAFICO TSM_ANNO
+
+
+	function opcionesActual(minTw, maxTw, todosDatos, color){
+
+		console.log('datos mínimos :'+ minTw);
+		console.log('datos Máximos :'+ maxTw);
+
+		minTw = ((Math.floor(minTw))-1);
+		maxTw = ((Math.round(maxTw))+1);
 
 		console.log('datos mínimos :'+ minTw);
 		console.log('datos Máximos :'+ maxTw);
@@ -369,7 +830,7 @@ $(document).ready(function(){
 			series: [
 			{
 				name: "TSM",
-				data: datosprs
+				data: todosDatos
 			}],
 			xaxis: {
 				type: "datetime",

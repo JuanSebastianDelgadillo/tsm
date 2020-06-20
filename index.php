@@ -58,7 +58,7 @@
 					<div class="modal-body">
 						<div id="contenido">
 							<div class="form-check">
-							  <input class="form-check-input btn_get_fecha" id="tsmActual" type="checkbox" checked value="">
+							  <input class="form-check-input btn_get_fecha" id="tsmActual" type="checkbox" value="">
 							  <label class="form-check-label" for="tsmActual">
 							    TSM Actual
 							  </label>
